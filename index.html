@@ -6,13 +6,11 @@
     <title>Programação De Irrigação - Fazenda Oásis</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome (Adicionado crossorigin para evitar SecurityError no html-to-image) -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
     
-    <!-- html-to-image para exportação superior -->
+    <!-- html-to-image para exportação/compartilhamento -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
-    <!-- jsPDF para PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
         .input-transicao { transition: all 0.3s ease; }
@@ -21,6 +19,19 @@
         .exporting .no-export { display: none !important; }
         .exporting { padding: 20px; background-color: white; border: none; box-shadow: none; }
         .exporting table { border: 1px solid #e5e7eb; }
+        
+        /* Força a grade de 3 colunas e REMOVE BARRAS DE ROLAGEM para mostrar todos os dados na exportação */
+        .exporting #tabelas-blocos-container {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 1.5rem !important;
+        }
+
+        /* Remove a restrição de scroll durante a exportação da imagem para capturar tudo */
+        .exporting .overflow-x-auto {
+            overflow: visible !important;
+            height: max-content !important;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800 font-sans p-4 md:p-8">
@@ -35,21 +46,21 @@
                 </h3>
                 
                 <div class="flex items-center gap-3">
-                    <!-- Pequeno indicador de status ao lado do botão -->
                     <span id="status-csv" class="text-xs text-gray-500 font-medium hidden sm:block">Sem CSV (0 L/h)</span>
-                    
-                    <!-- Botão de Upload enxuto -->
                     <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md cursor-pointer flex items-center gap-2 text-sm transition-colors">
                         <i class="fa-solid fa-upload"></i> Importar CSV
                         <input type="file" id="input-csv" accept=".csv" class="hidden" onchange="processarArquivoCSV(event)">
                     </label>
+                    <button onclick="limparTodosOsDados()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow-md flex items-center gap-2 text-sm transition-colors ml-2" title="Apagar todos os dados salvos">
+                        <i class="fa-solid fa-trash-can"></i> Limpar Tudo
+                    </button>
                 </div>
             </div>
             
             <form id="form-irrigacao" class="space-y-6">
                 
                 <!-- Linha 1: Dados Globais do Relatório -->
-                <div class="grid grid-cols-1 md:grid-cols-3 border-2 border-green-500 rounded-xl overflow-hidden divide-y md:divide-y-0 md:divide-x-2 divide-green-500 shadow-sm bg-green-50/50">
+                <div class="grid grid-cols-1 md:grid-cols-4 border-2 border-green-500 rounded-xl overflow-hidden divide-y md:divide-y-0 md:divide-x-2 divide-green-500 shadow-sm bg-green-50/50">
                     
                     <div class="flex flex-col gap-2 p-5 justify-center">
                         <label for="data" class="font-bold text-green-800 text-center uppercase text-sm tracking-wider">
@@ -77,12 +88,24 @@
                         </select>
                         <input type="text" id="solicitante-outro" class="hidden border border-green-400 rounded-lg p-3 focus:ring-2 focus:ring-green-500 mt-2 text-center text-green-900 font-semibold shadow-sm w-full max-w-[250px] mx-auto" placeholder="Nome do solicitante" oninput="atualizarInfoGlobais()">
                     </div>
+
+                    <div class="flex flex-col gap-2 p-5 justify-center">
+                        <label for="aplicador" class="font-bold text-green-800 text-center uppercase text-sm tracking-wider">
+                            <i class="fa-solid fa-tractor mr-1"></i> Aplicador
+                        </label>
+                        <select id="aplicador" required class="border border-green-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 bg-white text-center text-green-900 font-semibold shadow-sm w-full max-w-[250px] mx-auto" onchange="alternarCampoOutro('aplicador', 'aplicador-outro'); atualizarInfoGlobais()">
+                            <option value="" disabled selected>Selecione...</option>
+                            <option value="Fábio Pereira">Fábio Pereira</option>
+                            <option value="Rafael">Rafael</option>
+                            <option value="outro">Outro (Digitar)</option>
+                        </select>
+                        <input type="text" id="aplicador-outro" class="hidden border border-green-400 rounded-lg p-3 focus:ring-2 focus:ring-green-500 mt-2 text-center text-green-900 font-semibold shadow-sm w-full max-w-[250px] mx-auto" placeholder="Nome do aplicador" oninput="atualizarInfoGlobais()">
+                    </div>
                 </div>
 
                 <!-- Linha 2: Detalhes da Válvula/Pulso -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-start mt-8">
                     
-                    <!-- Bloco -->
                     <div class="flex flex-col gap-2">
                         <label for="bloco" class="font-semibold text-sm text-green-800 text-center">Bloco</label>
                         <select id="bloco" required class="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 text-center font-medium" onchange="alternarCampoOutro('bloco', 'bloco-outro'); preverVazaoEmissor()">
@@ -97,7 +120,6 @@
                         <input type="text" id="bloco-outro" class="hidden border border-gray-400 rounded-lg p-2 focus:ring-2 focus:ring-green-500 mt-1 text-center font-medium" placeholder="Qual?" oninput="preverVazaoEmissor()">
                     </div>
 
-                    <!-- Válvula -->
                     <div class="flex flex-col gap-2">
                         <label for="valvula" class="font-semibold text-sm text-green-800 text-center">Válvula</label>
                         <select id="valvula" required class="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 text-center font-medium" onchange="alternarCampoOutro('valvula', 'valvula-outro'); preverVazaoEmissor()">
@@ -111,13 +133,11 @@
                         <input type="text" id="valvula-outro" class="hidden border border-gray-400 rounded-lg p-2 focus:ring-2 focus:ring-green-500 mt-1 text-center font-medium" placeholder="Qual?" oninput="preverVazaoEmissor()">
                     </div>
 
-                    <!-- Pulso -->
                     <div class="flex flex-col gap-2">
                         <label for="horas" class="font-semibold text-sm text-green-800 text-center">Pulso (Tempo)</label>
                         <input type="time" id="horas" required class="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 text-center font-medium" oninput="preverVazaoEmissor()">
                     </div>
 
-                    <!-- Turno -->
                     <div class="flex flex-col gap-2">
                         <label for="turno" class="font-semibold text-sm text-green-800 text-center">Turno</label>
                         <select id="turno" required class="border-2 border-green-500 bg-green-50 text-green-800 rounded-lg p-3 cursor-pointer text-center font-bold focus:ring-2 focus:ring-green-400 w-full appearance-none">
@@ -128,7 +148,6 @@
                         </select>
                     </div>
 
-                    <!-- Status -->
                     <div class="flex flex-col gap-2">
                         <label for="status" class="font-semibold text-sm text-green-800 text-center">Status</label>
                         <select id="status" required class="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 text-center font-medium w-full bg-white text-gray-800 appearance-none">
@@ -140,7 +159,6 @@
 
                 </div>
 
-                <!-- Painel de Feedback de Cálculo em Tempo Real -->
                 <div id="painel-calculo-previo" class="hidden bg-blue-50/50 border border-blue-200 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
                     <div class="flex items-center gap-3">
                         <div class="bg-blue-100 p-2.5 rounded-full text-blue-700">
@@ -157,7 +175,6 @@
                     </div>
                 </div>
 
-                <!-- Botão Adicionar -->
                 <div class="flex justify-end pt-4 mt-4">
                     <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all flex items-center gap-2 text-lg">
                         <i class="fa-solid fa-plus"></i> Inserir na Lista
@@ -176,17 +193,18 @@
                 </h3>
                 <div class="flex gap-3">
                     <button onclick="exportar('jpeg')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded shadow flex items-center gap-2 transition-colors">
-                        <i class="fa-solid fa-image"></i> Baixar JPEG
+                        <i class="fa-solid fa-image"></i> Baixar Imagem
                     </button>
-                    <button onclick="exportar('pdf')" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded shadow flex items-center gap-2 transition-colors">
-                        <i class="fa-solid fa-file-pdf"></i> Baixar PDF (Deitado)
+                    <!-- Novo botão de compartilhamento via WhatsApp -->
+                    <button onclick="compartilharWhatsApp()" class="bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold py-2 px-4 rounded shadow flex items-center gap-2 transition-colors">
+                        <i class="fa-brands fa-whatsapp text-lg"></i> Enviar p/ WhatsApp
                     </button>
                 </div>
             </div>
 
             <!-- Cabeçalho do Relatório Impresso -->
             <div class="flex flex-col mb-8 gap-6">
-                <!-- Títulos (Aparecem no Export) -->
+                <!-- Títulos -->
                 <div class="flex items-center gap-4">
                     <img src="https://i.imgur.com/wEozr34.png" alt="Logo Fazenda Oásis" class="h-20 w-auto object-contain bg-transparent">
                     <div>
@@ -196,7 +214,7 @@
                 </div>
                 
                 <!-- Infos Gerais -->
-                <div class="grid grid-cols-1 md:grid-cols-3 w-full border-2 border-green-600 rounded-xl overflow-hidden divide-y md:divide-y-0 md:divide-x-2 divide-green-600 bg-green-50/40">
+                <div class="grid grid-cols-1 md:grid-cols-4 w-full border-2 border-green-600 rounded-xl overflow-hidden divide-y md:divide-y-0 md:divide-x-2 divide-green-600 bg-green-50/40">
                     <div class="text-center p-4 flex flex-col justify-center items-center">
                         <span class="text-green-700 font-bold block uppercase text-xs tracking-widest mb-1">Data</span>
                         <span id="rel-data" class="font-extrabold text-xl text-green-900">-</span>
@@ -209,10 +227,14 @@
                         <span class="text-green-700 font-bold block uppercase text-xs tracking-widest mb-1">Solicitante</span>
                         <span id="rel-solicitante" class="font-extrabold text-xl text-green-900">-</span>
                     </div>
+                    <div class="text-center p-4 flex flex-col justify-center items-center">
+                        <span class="text-green-700 font-bold block uppercase text-xs tracking-widest mb-1">Aplicador</span>
+                        <span id="rel-aplicador" class="font-extrabold text-xl text-green-900">-</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Painel de Totais (Dashboard Geral) -->
+            <!-- Painel de Totais -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div class="bg-white p-4 rounded-lg border border-green-200 shadow-sm text-center flex flex-col justify-center items-center h-full">
                     <div class="text-green-700 text-sm font-bold uppercase mb-1">Blocos a Irrigar</div>
@@ -226,14 +248,13 @@
                     <div class="text-green-700 text-sm font-bold uppercase mb-1">Tempo Total</div>
                     <div id="tot-tempo" class="text-2xl font-extrabold text-green-600">0 h 0 min</div>
                 </div>
-                <!-- Total do Volume Aplicado Geral (Azul Claro Elegante) -->
                 <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm text-center flex flex-col justify-center items-center h-full">
                     <div class="text-blue-900 text-sm font-bold uppercase mb-1">Volume Aplicado Geral</div>
                     <div id="tot-volume" class="text-2xl font-extrabold text-blue-950">0 L</div>
                 </div>
             </div>
             
-            <!-- Tabelas Separadas por Bloco usando Grid (Lado a Lado - 3 Colunas) com Alturas Alinhadas -->
+            <!-- Tabelas Separadas por Bloco (3 colunas dinâmicas) -->
             <div id="tabelas-blocos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 <!-- Espaço preenchido via JS ou mensagem de lista vazia -->
                 <div id="lista-vazia-mensagem" class="col-span-1 md:col-span-2 lg:col-span-3 p-12 text-center text-green-600/70 border border-green-100 rounded-lg bg-green-50/20 italic">
@@ -246,13 +267,10 @@
     </div>
 
     <script>
-        // Estrutura de dados para guardar informações dos emissores vindos do CSV
         let baseEmissores = {};
-
-        // Array para armazenar os dados e calcular totais
         let registros = [];
+        const STORAGE_KEY = 'oasisIrrigacaoAppData';
 
-        // Ícone SVG elegante representando um microaspersor rotativo em funcionamento
         const iconeMicroaspersorSVG = `
             <svg class="w-6 h-6 text-blue-500 inline-block align-middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block;">
                 <path d="M12 22v-9" />
@@ -265,22 +283,25 @@
         `;
 
         document.addEventListener('DOMContentLoaded', () => {
+            carregarDadosLocais(); // Tenta carregar dados salvos primeiro
+
             const dataInput = document.getElementById('data');
-            const hoje = new Date();
-            const ano = hoje.getFullYear();
-            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-            const dia = String(hoje.getDate()).padStart(2, '0');
-            dataInput.value = `${ano}-${mes}-${dia}`;
+            // Se não houver data salva, usa a de hoje
+            if (!dataInput.value) {
+                const hoje = new Date();
+                const ano = hoje.getFullYear();
+                const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+                const dia = String(hoje.getDate()).padStart(2, '0');
+                dataInput.value = `${ano}-${mes}-${dia}`;
+            }
             
             atualizarInfoGlobais();
 
-            // Gerenciar envio do formulário
             document.getElementById('form-irrigacao').addEventListener('submit', (e) => {
                 e.preventDefault();
                 adicionarRegistro();
             });
             
-            // Ouvintes para campos
             document.getElementById('bloco').addEventListener('change', () => {
                 alternarCampoOutro('bloco', 'bloco-outro');
                 preverVazaoEmissor();
@@ -291,7 +312,75 @@
             });
         });
 
-        // Alternar campos de "Outro"
+        // --- FUNÇÕES DE SALVAMENTO AUTOMÁTICO (LOCAL STORAGE) ---
+        function salvarDadosLocais() {
+            const dados = {
+                registros: registros,
+                baseEmissores: baseEmissores,
+                dataRelatorio: document.getElementById('data').value,
+                solicitante: document.getElementById('solicitante').value,
+                solicitanteOutro: document.getElementById('solicitante-outro').value,
+                aplicador: document.getElementById('aplicador').value,
+                aplicadorOutro: document.getElementById('aplicador-outro').value
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+        }
+
+        function carregarDadosLocais() {
+            const salvo = localStorage.getItem(STORAGE_KEY);
+            if (salvo) {
+                try {
+                    const dados = JSON.parse(salvo);
+                    registros = dados.registros || [];
+                    baseEmissores = dados.baseEmissores || {};
+
+                    if (dados.dataRelatorio) document.getElementById('data').value = dados.dataRelatorio;
+
+                    if (dados.solicitante) {
+                        document.getElementById('solicitante').value = dados.solicitante;
+                        if (dados.solicitante === 'outro') {
+                            document.getElementById('solicitante-outro').classList.remove('hidden');
+                            document.getElementById('solicitante-outro').value = dados.solicitanteOutro || '';
+                        }
+                    }
+
+                    if (dados.aplicador) {
+                        document.getElementById('aplicador').value = dados.aplicador;
+                        if (dados.aplicador === 'outro') {
+                            document.getElementById('aplicador-outro').classList.remove('hidden');
+                            document.getElementById('aplicador-outro').value = dados.aplicadorOutro || '';
+                        }
+                    }
+
+                    atualizarBadgeCSVSalvo();
+                    renderizarTabelasPorBloco();
+                    atualizarDashboard();
+                } catch (e) {
+                    console.error("Erro ao carregar dados salvos", e);
+                }
+            }
+        }
+
+        function limparTodosOsDados() {
+            if(confirm("Tem certeza que deseja apagar todos os dados registrados, inclusive o CSV e os registros da tabela? Isso não pode ser desfeito.")) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload(); // Recarrega a página para limpar tudo visualmente
+            }
+        }
+
+        function atualizarBadgeCSVSalvo() {
+            const numValvulas = Object.keys(baseEmissores).length;
+            const statusDiv = document.getElementById('status-csv');
+            if (numValvulas > 0) {
+                statusDiv.className = "text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded hidden sm:block";
+                statusDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${numValvulas} Válvulas Carregadas (Salvo)`;
+            } else {
+                statusDiv.className = "text-xs text-gray-500 font-medium hidden sm:block";
+                statusDiv.innerHTML = "Sem CSV (0 L/h)";
+            }
+        }
+        // --------------------------------------------------------
+
         function alternarCampoOutro(selectId, inputId) {
             const select = document.getElementById(selectId);
             const input = document.getElementById(inputId);
@@ -306,7 +395,6 @@
             }
         }
 
-        // Função para obter o nome real do bloco e válvula selecionada (lidando com "Outro")
         function obterValoresAtuaisForm() {
             let bloco = document.getElementById('bloco').value;
             if(bloco === 'outro') bloco = document.getElementById('bloco-outro').value;
@@ -317,28 +405,23 @@
             return { bloco: bloco?.trim(), valvula: valvula?.trim() };
         }
 
-        // Buscar informações dos emissores na base importada
         function obterEmissoresValvula(bloco, valvula) {
             if (!bloco || !valvula) return null;
-            // Padroniza com zeros para buscar de maneira segura ("1" -> "01", "4" -> "04")
             const blocoPad = bloco.padStart(2, '0');
             const valvulaPad = valvula.padStart(2, '0');
             const chave = `${blocoPad}_${valvulaPad}`;
             return baseEmissores[chave] || { micros: 0, aspersores: 0 };
         }
 
-        // Calcula os litros com base nos micros (90 L/h) e aspersores (520 L/h)
         function calcularVazaoVantagem(emissores) {
             if (!emissores) return 0;
             return (emissores.micros * 90) + (emissores.aspersores * 520);
         }
 
-        // Atualizar informações do cabeçalho do relatório
         function atualizarInfoGlobais() {
             const dataVal = document.getElementById('data').value;
             const semanaInput = document.getElementById('semana');
             
-            // Calculo de Semana
             let semanaTexto = "-";
             if (dataVal) {
                 const partes = dataVal.split('-');
@@ -351,18 +434,22 @@
                 semanaTexto = numSemana;
             }
 
-            // Solicitante
             let solicitante = document.getElementById('solicitante').value;
             if (solicitante === 'outro') solicitante = document.getElementById('solicitante-outro').value;
             if (!solicitante) solicitante = "Não informado";
 
-            // Formatar Data
+            let aplicador = document.getElementById('aplicador').value;
+            if (aplicador === 'outro') aplicador = document.getElementById('aplicador-outro').value;
+            if (!aplicador) aplicador = "Não informado";
+
             const dataFormatada = dataVal ? dataVal.split('-').reverse().join('/') : "-";
 
-            // Atualizar UI do Relatório
             document.getElementById('rel-data').innerText = dataFormatada;
             document.getElementById('rel-semana').innerText = semanaTexto;
             document.getElementById('rel-solicitante').innerText = solicitante;
+            document.getElementById('rel-aplicador').innerText = aplicador;
+
+            salvarDadosLocais(); // Salva sempre que atualizar infos globais
         }
 
         function tempoParaDecimal(tempoStr) {
@@ -380,12 +467,10 @@
             return res.join(' ');
         }
 
-        // Formata os Litros removendo completamente as casas decimais (apenas inteiros)
         function formataLitros(valor) {
             return Math.round(valor).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         }
 
-        // Função que prevê a vazão e o volume estimado enquanto o usuário digita/seleciona
         function preverVazaoEmissor() {
             const { bloco, valvula } = obterValoresAtuaisForm();
             const horasVal = document.getElementById('horas').value;
@@ -422,7 +507,6 @@
             }
         }
 
-        // Adicionar Registro
         function adicionarRegistro() {
             const { bloco, valvula } = obterValoresAtuaisForm();
             const pulsoHHMM = document.getElementById('horas').value;
@@ -437,7 +521,6 @@
                 return; 
             }
 
-            // Busca os emissores do CSV para gravar no registro
             const emissores = obterEmissoresValvula(bloco, valvula) || { micros: 0, aspersores: 0 };
             const vazaoCalculada = calcularVazaoVantagem(emissores);
             const volume = pulsoDecimal * vazaoCalculada;
@@ -460,8 +543,8 @@
             
             renderizarTabelasPorBloco();
             atualizarDashboard();
+            salvarDadosLocais(); // Salva novo registro
 
-            // Limpar campos parciais
             document.getElementById('bloco').value = ''; 
             alternarCampoOutro('bloco', 'bloco-outro');
             document.getElementById('valvula').value = ''; 
@@ -470,7 +553,6 @@
             document.getElementById('turno').value = '';
             document.getElementById('status').value = 'Programada';
             
-            // Ocultar painel de preview de cálculos
             document.getElementById('painel-calculo-previo').classList.add('hidden');
         }
 
@@ -478,6 +560,7 @@
             registros = registros.filter(r => r.id !== id);
             renderizarTabelasPorBloco();
             atualizarDashboard();
+            salvarDadosLocais(); // Salva após deletar
         }
 
         function atualizarDashboard() {
@@ -492,7 +575,6 @@
             document.getElementById('tot-volume').innerText = formataLitros(totalVolume) + " L";
         }
 
-        // Renderizar Tabelas Separadas por Bloco
         function renderizarTabelasPorBloco() {
             const container = document.getElementById('tabelas-blocos-container');
             container.innerHTML = '';
@@ -506,7 +588,6 @@
                 return;
             }
 
-            // Agrupar registros por Bloco
             const grupos = {};
             registros.forEach(r => {
                 if (!grupos[r.bloco]) {
@@ -515,53 +596,55 @@
                 grupos[r.bloco].push(r);
             });
 
-            // Ordenar as chaves dos blocos alfabética/numericamente
             const blocosOrdenados = Object.keys(grupos).sort((a, b) => {
                 return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
             });
 
-            // Gerar uma tabela para cada Bloco
             blocosOrdenados.forEach(blocoNome => {
                 const registrosDoBloco = grupos[blocoNome];
                 
-                // Calcular volume acumulado do Bloco
-                const totalVolumeBloco = registrosDoBloco.reduce((acc, curr) => acc + curr.volume, 0);
-                
-                // Calcular a soma da quantidade de emissores ativos no Bloco (Microaspersores + Aspersores) separadamente
-                const totalMicrosBloco = registrosDoBloco.reduce((acc, curr) => {
-                    const em = curr.emissoresInfo;
-                    return acc + (em ? (em.micros || 0) : 0);
-                }, 0);
-                const totalAspersoresBloco = registrosDoBloco.reduce((acc, curr) => {
-                    const em = curr.emissoresInfo;
-                    return acc + (em ? (em.aspersores || 0) : 0);
-                }, 0);
+                // --- Lógica do Status por Bloco ---
+                let statusBloco = "Programada"; 
+                const temPendente = registrosDoBloco.some(r => r.status === "Pendente");
+                const todosConcluidos = registrosDoBloco.every(r => r.status === "Concluída");
 
-                // Calcular o tempo total de pulso no bloco
+                if (temPendente) statusBloco = "Pendente";
+                else if (todosConcluidos) statusBloco = "Concluída";
+
+                let corBadgeStatus = "bg-blue-50 text-blue-800 border-blue-200";
+                if(statusBloco === "Concluída") corBadgeStatus = "bg-green-100 text-green-800 border-green-300";
+                if(statusBloco === "Pendente") corBadgeStatus = "bg-yellow-100 text-yellow-800 border-yellow-300";
+                // ------------------------------------
+
+                const totalVolumeBloco = registrosDoBloco.reduce((acc, curr) => acc + curr.volume, 0);
+                const totalMicrosBloco = registrosDoBloco.reduce((acc, curr) => acc + (curr.emissoresInfo ? curr.emissoresInfo.micros : 0), 0);
+                const totalAspersoresBloco = registrosDoBloco.reduce((acc, curr) => acc + (curr.emissoresInfo ? curr.emissoresInfo.aspersores : 0), 0);
                 const totalTempoDecimalBloco = registrosDoBloco.reduce((acc, curr) => acc + curr.pulsoDecimal, 0);
                 const totalTempoFormatadoBloco = decimalParaTempoStr(totalTempoDecimalBloco);
 
-                // Criar container do Bloco com Contorno Elegante (utiliza flex-col e h-full para igualar as alturas no grid)
                 const blocoDiv = document.createElement('div');
                 blocoDiv.className = "bg-white rounded-xl border border-gray-300 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col justify-between h-full w-full";
 
-                // Título do Bloco com o Ícone Elegante de Microaspersor
                 const headerBloco = document.createElement('div');
-                headerBloco.className = "bg-green-100 text-black border-b border-green-300 px-4 py-3 font-extrabold text-lg flex items-center gap-2.5";
+                headerBloco.className = "bg-green-100 text-black border-b border-green-300 px-4 py-3 font-extrabold text-lg flex justify-between items-center";
                 headerBloco.innerHTML = `
-                    ${iconeMicroaspersorSVG}
-                    <span>Bloco ${blocoNome}</span>
+                    <div class="flex items-center gap-2.5">
+                        ${iconeMicroaspersorSVG}
+                        <span>Bloco ${blocoNome}</span>
+                    </div>
+                    <span class="inline-flex items-center justify-center px-2 py-1 rounded text-xs font-bold border ${corBadgeStatus} tracking-wide uppercase shadow-sm">
+                        ${statusBloco}
+                    </span>
                 `;
                 blocoDiv.appendChild(headerBloco);
 
-                // Tabela (Envolve com flex-grow para expandir o corpo e empurrar o rodapé para o fim)
                 const overflowDiv = document.createElement('div');
                 overflowDiv.className = "overflow-x-auto flex-grow";
                 
                 const tabela = document.createElement('table');
                 tabela.className = "w-full text-left border-collapse";
                 
-                // Header da Tabela
+                // Removida a coluna Status daqui
                 tabela.innerHTML = `
                     <thead>
                         <tr class="bg-green-50/50 text-green-800 uppercase text-xs border-b border-green-200">
@@ -570,7 +653,6 @@
                             <th class="py-3 px-2 font-bold text-center align-middle">Pulso</th>
                             <th class="py-3 px-2 font-bold text-center align-middle text-green-800">Volume Aplicado</th>
                             <th class="py-3 px-2 font-bold text-center align-middle">Turno</th>
-                            <th class="py-3 px-2 font-bold text-center align-middle">Status</th>
                             <th class="py-3 px-2 font-bold text-center align-middle no-export w-12">Ações</th>
                         </tr>
                     </thead>
@@ -580,48 +662,29 @@
                 tbody.className = "divide-y divide-green-100 bg-white";
 
                 registrosDoBloco.forEach(r => {
-                    let statusClass = "bg-blue-50 text-blue-800 border-blue-200";
-                    if(r.status === "Concluída") statusClass = "bg-green-100 text-green-800 border-green-300";
-                    if(r.status === "Pendente") statusClass = "bg-yellow-100 text-yellow-800 border-yellow-300";
-
-                    // Gerar texto detalhado de emissores
-                    let emissoresHTML = '<span class="text-gray-400 italic text-xs">Sem emissores cadastrados</span>';
+                    let emissoresHTML = '<span class="text-gray-400 italic text-xs">Sem emissores</span>';
                     const em = r.emissoresInfo;
                     if (em && (em.micros > 0 || em.aspersores > 0)) {
                         let partes = [];
-                        if (em.micros > 0) {
-                            partes.push(`<span class="font-bold text-blue-800">${em.micros}</span> <span class="text-xs text-gray-500">Micro(90L/h)</span>`);
-                        }
-                        if (em.aspersores > 0) {
-                            partes.push(`<span class="font-bold text-blue-800">${em.aspersores}</span> <span class="text-xs text-gray-500">Asp(520L/h)</span>`);
-                        }
+                        if (em.micros > 0) partes.push(`<span class="font-bold text-blue-800">${em.micros}</span> <span class="text-xs text-gray-500">Micro</span>`);
+                        if (em.aspersores > 0) partes.push(`<span class="font-bold text-blue-800">${em.aspersores}</span> <span class="text-xs text-gray-500">Asp</span>`);
                         emissoresHTML = `<div class="flex flex-col gap-0.5 text-xs">${partes.join(" <span class='text-[10px] text-gray-300'>+</span> ")}</div>`;
                     }
 
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-green-50/30 transition-colors text-sm";
                     
+                    // Célula de Status removida de cada linha
                     tr.innerHTML = `
                         <td class="py-3 px-2 border-b font-black text-green-800 text-center align-middle">Válvula ${r.valvula}</td>
                         <td class="py-3 px-2 border-b align-middle text-left leading-tight">${emissoresHTML}</td>
                         <td class="py-3 px-2 border-b font-bold text-green-700 text-center align-middle">${r.pulsoTexto}</td>
-                        
-                        <td class="py-3 px-2 border-b font-extrabold text-blue-700 text-center align-middle whitespace-nowrap">
-                            ${formataLitros(r.volume)} L
-                        </td>
-                        
-                        <!-- Uso de inline-flex e itens ao centro com leading-none garante o alinhamento perfeito sem cair o texto -->
+                        <td class="py-3 px-2 border-b font-extrabold text-blue-700 text-center align-middle whitespace-nowrap">${formataLitros(r.volume)} L</td>
                         <td class="py-3 px-2 border-b text-center align-middle">
                             <span class="inline-flex items-center justify-center px-2 py-1 rounded text-[11px] font-bold border border-green-500 bg-green-50 text-green-700 tracking-wide uppercase leading-none min-h-[24px]">
                                 ${r.turno}
                             </span>
                         </td>
-                        <td class="py-3 px-2 border-b text-center align-middle">
-                            <span class="inline-flex items-center justify-center px-2 py-1 rounded text-[11px] font-bold border ${statusClass} tracking-wide uppercase leading-none min-h-[24px]">
-                                ${r.status}
-                            </span>
-                        </td>
-                        
                         <td class="py-3 px-2 border-b text-center align-middle no-export">
                             <button type="button" onclick="deletarRegistro(${r.id})" class="text-red-500 hover:text-red-700 p-1.5 rounded transition-colors" title="Excluir">
                                 <i class="fa-solid fa-trash"></i>
@@ -635,7 +698,6 @@
                 overflowDiv.appendChild(tabela);
                 blocoDiv.appendChild(overflowDiv);
 
-                // Rodapé elegante: Ajustado usando Flex e leading-none para garantir o alinhamento perfeito na exportação
                 const footerBloco = document.createElement('div');
                 footerBloco.className = "bg-gray-50 border-t border-gray-200 px-3 py-3 flex flex-col xl:flex-row justify-between items-center gap-3 rounded-b-xl";
                 footerBloco.innerHTML = `
@@ -670,12 +732,10 @@
                     </div>
                 `;
                 blocoDiv.appendChild(footerBloco);
-
                 container.appendChild(blocoDiv);
             });
         }
 
-        // Funções para Processamento de CSV de Emissores
         function processarArquivoCSV(evento) {
             const arquivo = evento.target.files[0];
             if (!arquivo) return;
@@ -685,10 +745,10 @@
                 const texto = e.target.result;
                 const processadoComSucesso = extrairDadosCSV(texto);
                 if (processadoComSucesso) {
-                    // Após a carga com sucesso, recalcular o volume de todos os registros existentes
                     recalcularRegistrosExistentes();
                     renderizarTabelasPorBloco();
                     atualizarDashboard();
+                    salvarDadosLocais(); // Salva base de emissores lida
                 }
             };
             leitor.readAsText(arquivo, 'UTF-8');
@@ -702,42 +762,24 @@
                     return false;
                 }
 
-                // Identifica de forma inteligente o delimitador (, ; ou tabulação)
                 const primeiraLinha = linhas[0];
                 let delimitador = ",";
-                if (primeiraLinha.includes(";")) {
-                    delimitador = ";";
-                } else if (primeiraLinha.includes("\t")) {
-                    delimitador = "\t";
-                }
+                if (primeiraLinha.includes(";")) delimitador = ";";
+                else if (primeiraLinha.includes("\t")) delimitador = "\t";
 
                 const cabecalho = primeiraLinha.split(delimitador).map(c => c.trim().toLowerCase());
                 
-                // Mapeamento esperado das colunas
                 const idxBloco = cabecalho.findIndex(c => c.includes("local") || c === "bloco" || c.includes("setor"));
-                
-                // Identifica a coluna que se refere à válvula (mesmo que se chame "Tipo Válvula")
                 const idxValvula = cabecalho.findIndex(c => c.includes("valvula") || c.includes("válvula") || c.includes("vávlula"));
-
-                // Identifica o Tipo de Emissor (Garante que a palavra 'tipo' não confunda com a coluna 'Tipo Válvula')
-                const idxTipo = cabecalho.findIndex(c => 
-                    c.includes("aspersor") || 
-                    c.includes("emissor") || 
-                    (c.includes("tipo") && !c.includes("valvula") && !c.includes("válvula") && !c.includes("vávlula"))
-                );
-                
+                const idxTipo = cabecalho.findIndex(c => c.includes("aspersor") || c.includes("emissor") || (c.includes("tipo") && !c.includes("valvula") && !c.includes("válvula") && !c.includes("vávlula")));
                 const idxQuantidade = cabecalho.findIndex(c => c.includes("qtde") || c.includes("quantidade") || c.includes("ativos"));
 
-                // Valida se as colunas essenciais existem
                 if (idxBloco === -1 || idxTipo === -1 || idxQuantidade === -1) {
                     alert("Estrutura do CSV inválida. O arquivo deve conter no mínimo as colunas: 'Local', 'Tipo de Aspersor' e 'Qtde. Aspersor Ativos'.");
                     return false;
                 }
 
-                // Limpa base existente
                 const novaBase = {};
-                let registrosCarregados = 0;
-
                 for (let i = 1; i < linhas.length; i++) {
                     const linha = linhas[i].trim();
                     if (!linha) continue;
@@ -747,129 +789,153 @@
 
                     const blocoOriginal = colunas[idxBloco] ? colunas[idxBloco].trim() : "";
                     const tipo = colunas[idxTipo] ? colunas[idxTipo].trim().toLowerCase() : "";
-                    
-                    // Tratamento para números de quantidade (remover pontos de milhar se houver)
                     const quantidadeStr = colunas[idxQuantidade] ? colunas[idxQuantidade].trim().replace(/\./g, '') : "0";
                     const quantidade = parseInt(quantidadeStr, 10) || 0;
 
                     if (!blocoOriginal) continue;
 
-                    // Padronização para 2 dígitos (Ex: se for "Bloco 4" ou "4", transforma em "04")
                     const matchNumero = blocoOriginal.match(/\d+/);
                     const blocoPad = matchNumero ? matchNumero[0].padStart(2, '0') : blocoOriginal.padStart(2, '0');
                     
-                    let valvulaPad = "01"; // Padrão: Válvula 01
-                    
-                    // Se houver uma coluna informando a válvula (ex: "1 Válvula Ativa"), extrai o número
+                    let valvulaPad = "01";
                     if (idxValvula !== -1 && colunas[idxValvula]) {
                         const valStr = colunas[idxValvula].trim();
                         const matchVal = valStr.match(/\d+/);
-                        if(matchVal) {
-                            valvulaPad = matchVal[0].padStart(2, '0');
-                        }
+                        if(matchVal) valvulaPad = matchVal[0].padStart(2, '0');
                     } 
 
                     const chave = `${blocoPad}_${valvulaPad}`;
+                    if (!novaBase[chave]) novaBase[chave] = { micros: 0, aspersores: 0 };
 
-                    if (!novaBase[chave]) {
-                        novaBase[chave] = { micros: 0, aspersores: 0 };
-                    }
-
-                    // Incrementa conforme o tipo de emissor (Soma todas as linhas referentes à mesma válvula)
-                    if (tipo.includes("micro")) {
-                        novaBase[chave].micros += quantidade;
-                    } else if (tipo.includes("asper")) {
-                        novaBase[chave].aspersores += quantidade;
-                    }
-                    registrosCarregados++;
+                    if (tipo.includes("micro")) novaBase[chave].micros += quantidade;
+                    else if (tipo.includes("asper")) novaBase[chave].aspersores += quantidade;
                 }
 
                 baseEmissores = novaBase;
-                
-                // Atualizar indicador visual de status
-                const statusDiv = document.getElementById('status-csv');
-                if (statusDiv) {
-                    statusDiv.className = "text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded hidden sm:block";
-                    statusDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${Object.keys(baseEmissores).length} Válvulas Carregadas`;
-                }
-
+                atualizarBadgeCSVSalvo();
                 preverVazaoEmissor();
                 return true;
             } catch (erro) {
                 console.error(erro);
-                alert("Erro ao processar o CSV. Por favor, revise as colunas do arquivo.");
+                alert("Erro ao processar o CSV.");
                 return false;
             }
         }
 
-        // Recalcula o volume de todos os itens da lista se o CSV mudar
         function recalcularRegistrosExistentes() {
             registros = registros.map(r => {
                 const emissores = obterEmissoresValvula(r.bloco, r.valvula) || { micros: 0, aspersores: 0 };
                 const vazaoCalculada = calcularVazaoVantagem(emissores);
                 const volume = r.pulsoDecimal * vazaoCalculada;
-                return {
-                    ...r,
-                    vazao: vazaoCalculada,
-                    volume: volume,
-                    emissoresInfo: { ...emissores }
-                };
+                return { ...r, vazao: vazaoCalculada, volume: volume, emissoresInfo: { ...emissores } };
             });
         }
 
-        // Função para Exportação Usando html-to-image
+        // --- FUNÇÕES DE EXPORTAÇÃO E COMPARTILHAMENTO ---
+        
         async function exportar(formato) {
             if(registros.length === 0) {
                 alert("Adicione pelo menos um registro antes de exportar.");
                 return;
             }
+            gerarImagemDaInterfaceEBaixar();
+        }
 
+        async function gerarImagemBase64() {
             const relatorioArea = document.getElementById('area-relatorio');
-            
-            // Adiciona classe para esconder elementos irrelevantes na impressão (Ações, botões)
             relatorioArea.classList.add('exporting');
-            
-            // Força a largura para uma boa captura de tabela (A4 landscape) em telas menores
-            relatorioArea.style.width = '1122px'; 
+            // Força largura em px na hora da foto para garantir o layout de grade de 3 colunas (semelhante ao A4 paisagem)
+            relatorioArea.style.width = '1200px'; 
             
             try {
-                // Renderização mais robusta com html-to-image (substituto do html2canvas)
                 const imgDataUrl = await htmlToImage.toJpeg(relatorioArea, {
-                    quality: 1.0,
-                    pixelRatio: 2, // Maior definição da imagem (retina)
+                    quality: 0.90, // Levemente comprimido
+                    pixelRatio: 2, 
                     backgroundColor: '#ffffff'
                 });
-
-                if (formato === 'jpeg') {
-                    const link = document.createElement('a');
-                    link.download = `Relatorio_Irrigacao_${document.getElementById('data').value}.jpeg`;
-                    link.href = imgDataUrl;
-                    link.click();
-                } 
-                else if (formato === 'pdf') {
-                    const { jsPDF } = window.jspdf;
-                    
-                    // PDF modo paisagem ('l'), medindo em pontos ('pt'), tamanho A4
-                    const pdf = new jsPDF('l', 'pt', 'a4');
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    
-                    // Usar as proporções reais da imagem gerada pelo html-to-image
-                    const img = new Image();
-                    img.src = imgDataUrl;
-                    await new Promise(r => img.onload = r);
-                    
-                    const pdfHeight = (img.height * pdfWidth) / img.width;
-                    
-                    pdf.addImage(imgDataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-                    pdf.save(`Relatorio_Irrigacao_${document.getElementById('data').value}.pdf`);
-                }
-            } catch (err) {
-                console.error("Erro ao gerar exportação: ", err);
-                alert("Ocorreu um erro ao gerar o arquivo.");
+                return imgDataUrl;
             } finally {
-                // Restaura o visual normal e remove largura forçada
                 relatorioArea.style.width = '';
                 relatorioArea.classList.remove('exporting');
+            }
+        }
+
+        async function gerarImagemDaInterfaceEBaixar() {
+            try {
+                const imgDataUrl = await gerarImagemBase64();
+                const link = document.createElement('a');
+                link.download = `Relatorio_Irrigacao_${document.getElementById('data').value}.jpeg`;
+                link.href = imgDataUrl;
+                link.click();
+            } catch (err) {
+                console.error("Erro ao gerar arquivo:", err);
+                alert("Ocorreu um erro ao gerar a imagem.");
+            }
+        }
+
+        async function compartilharWhatsApp() {
+            if(registros.length === 0) {
+                alert("Adicione pelo menos um registro antes de compartilhar.");
+                return;
+            }
+
+            // 1. Calcular a lógica do Status Geral da Programação Inteira
+            let statusGeral = "Programada"; 
+            const temPendente = registros.some(r => r.status === "Pendente");
+            const todosConcluidos = registros.every(r => r.status === "Concluída");
+
+            if (temPendente) {
+                statusGeral = "Pendente";
+            } else if (todosConcluidos && registros.length > 0) {
+                statusGeral = "Concluída";
+            }
+
+            // 2. Preparar Texto
+            const dataRaw = document.getElementById('data').value;
+            const dataFormatada = dataRaw ? dataRaw.split('-').reverse().join('/') : "-";
+            
+            const textoMensagem = `*Programação de Irrigação*\n🗓 Data: ${dataFormatada}\n📊 Status: ${statusGeral}`;
+
+            try {
+                // 3. Gerar Imagem (agora mostrando todos os dados sem barra de rolagem)
+                const imgDataUrl = await gerarImagemBase64();
+
+                // 4. Tentar compartilhar nativamente usando a Web Share API (celulares/tablets)
+                if (navigator.share) {
+                    try {
+                        const res = await fetch(imgDataUrl);
+                        const blob = await res.blob();
+                        const file = new File([blob], `Irrigacao_${dataRaw}.jpeg`, { type: 'image/jpeg' });
+
+                        await navigator.share({
+                            title: 'Programação de Irrigação',
+                            text: textoMensagem,
+                            files: [file] // Envia o arquivo e o texto juntos
+                        });
+                        return; // O compartilhamento nativo deu certo, não executa o fallback
+                    } catch (shareError) {
+                        console.log("Compartilhamento nativo cancelado ou falhou.", shareError);
+                        // Se falhou, continua e cai no Fallback abaixo
+                    }
+                }
+
+                // --- 5. Fallback para Computadores (WhatsApp Web) ---
+                const link = document.createElement('a');
+                link.download = `Irrigacao_${dataRaw}.jpeg`;
+                link.href = imgDataUrl;
+                link.click(); // Força o download da foto
+
+                const urlWa = `https://api.whatsapp.com/send?text=${encodeURIComponent(textoMensagem)}`;
+                window.open(urlWa, '_blank'); // Abre o WhatsApp Web com o texto pré-preenchido
+
+                // Aviso para o usuário anexar a imagem que acabou de baixar
+                setTimeout(() => {
+                    alert("Para compartilhar:\n1. A imagem do relatório foi baixada.\n2. O WhatsApp Web foi aberto com o texto.\n3. Agora basta arrastar/anexar a imagem baixada na conversa!");
+                }, 1000);
+
+            } catch (err) {
+                console.error("Erro ao preparar compartilhamento WhatsApp: ", err);
+                alert("Ocorreu um erro ao preparar o arquivo para compartilhamento.");
             }
         }
     </script>
