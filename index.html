@@ -17,7 +17,7 @@
         
         /* Oculta colunas de ações e botões durante a exportação */
         .exporting .no-export { display: none !important; }
-        .exporting { padding: 20px; background-color: white; border: none; box-shadow: none; }
+        .exporting { padding: 40px; background-color: white; border: none; box-shadow: none; }
         .exporting table { border: 1px solid #e5e7eb; }
         
         /* Força a grade de 3 colunas e REMOVE BARRAS DE ROLAGEM para mostrar todos os dados na exportação */
@@ -31,6 +31,11 @@
         .exporting .overflow-x-auto {
             overflow: visible !important;
             height: max-content !important;
+        }
+        
+        /* Exibe a assinatura oficial na exportação */
+        .exporting .watermark-footer {
+            display: block !important;
         }
     </style>
 </head>
@@ -159,7 +164,7 @@
 
                 </div>
 
-                <div id="painel-calculo-previo" class="hidden bg-blue-50/50 border border-blue-200 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+                <div id="painel-calculo-previo" class="hidden bg-blue-50/50 border border-blue-200 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-4 text-sm mt-4">
                     <div class="flex items-center gap-3">
                         <div class="bg-blue-100 p-2.5 rounded-full text-blue-700">
                             <i class="fa-solid fa-calculator text-lg"></i>
@@ -262,6 +267,11 @@
                 </div>
             </div>
 
+            <!-- Adicionando espaço em branco e sigla para exportação/watssap -->
+            <div class="watermark-footer hidden text-center pt-20 pb-8 mt-12 border-t border-gray-100">
+                <p class="text-gray-400 font-extrabold uppercase tracking-[0.2em] text-sm">Dados oficiais registrados do sistema Oásis</p>
+            </div>
+
         </section>
 
     </div>
@@ -273,15 +283,11 @@
 
         const iconeMicroaspersorSVG = `
             <svg class="w-6 h-6 text-black inline-block align-middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <!-- Gotejamentos simulando irrigação (Gotas arredondadas e intermitentes) -->
                 <path d="M7.5 7C5.5 8.5 4 11 4 13.5" stroke-dasharray="1 5" stroke-width="2.5" />
                 <path d="M16.5 7C18.5 8.5 20 11 20 13.5" stroke-dasharray="1 5" stroke-width="2.5" />
-                
-                <!-- Estrutura do microaspersor elegante e escura -->
                 <path d="M12 22V11" stroke-width="2" />
                 <path d="M10 11h4" stroke-width="2.5" />
                 <path d="M12 11V7" stroke-width="1.5" />
-                <!-- Rotor superior -->
                 <circle cx="12" cy="7" r="1.5" fill="currentColor" stroke="none" />
             </svg>
         `;
@@ -377,13 +383,12 @@
             const statusDiv = document.getElementById('status-csv');
             if (numValvulas > 0) {
                 statusDiv.className = "text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded hidden sm:block";
-                statusDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${numValvulas} Válvulas Carregadas (Salvo)`;
+                statusDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${numValvulas} Válvulas Carregadas`;
             } else {
                 statusDiv.className = "text-xs text-gray-500 font-medium hidden sm:block";
                 statusDiv.innerHTML = "Sem CSV (0 L/h)";
             }
         }
-        // --------------------------------------------------------
 
         function alternarCampoOutro(selectId, inputId) {
             const select = document.getElementById(selectId);
@@ -453,7 +458,7 @@
             document.getElementById('rel-solicitante').innerText = solicitante;
             document.getElementById('rel-aplicador').innerText = aplicador;
 
-            salvarDadosLocais(); // Salva sempre que atualizar infos globais
+            salvarDadosLocais(); 
         }
 
         function tempoParaDecimal(tempoStr) {
@@ -506,7 +511,7 @@
                     prevVolume.innerText = `Defina o pulso`;
                 }
             } else {
-                prevDetalhes.innerHTML = `<span class="text-red-500 font-medium">Nenhum emissor cadastrado para Bloco ${bloco} - Válvula ${valvula} no CSV.</span>`;
+                prevDetalhes.innerHTML = `<span class="text-red-500 font-medium">Nenhum emissor cadastrado no CSV.</span>`;
                 prevVolume.innerText = `0 L`;
             }
         }
@@ -547,7 +552,7 @@
             
             renderizarTabelasPorBloco();
             atualizarDashboard();
-            salvarDadosLocais(); // Salva novo registro
+            salvarDadosLocais(); 
 
             document.getElementById('bloco').value = ''; 
             alternarCampoOutro('bloco', 'bloco-outro');
@@ -564,7 +569,7 @@
             registros = registros.filter(r => r.id !== id);
             renderizarTabelasPorBloco();
             atualizarDashboard();
-            salvarDadosLocais(); // Salva após deletar
+            salvarDadosLocais(); 
         }
 
         function atualizarDashboard() {
@@ -607,7 +612,6 @@
             blocosOrdenados.forEach(blocoNome => {
                 const registrosDoBloco = grupos[blocoNome];
                 
-                // --- Lógica do Status por Bloco ---
                 let statusBloco = "Programada"; 
                 const temPendente = registrosDoBloco.some(r => r.status === "Pendente");
                 const todosConcluidos = registrosDoBloco.every(r => r.status === "Concluída");
@@ -618,7 +622,6 @@
                 let corBadgeStatus = "bg-blue-50 text-blue-800 border-blue-200";
                 if(statusBloco === "Concluída") corBadgeStatus = "bg-green-100 text-green-800 border-green-300";
                 if(statusBloco === "Pendente") corBadgeStatus = "bg-yellow-100 text-yellow-800 border-yellow-300";
-                // ------------------------------------
 
                 const totalVolumeBloco = registrosDoBloco.reduce((acc, curr) => acc + curr.volume, 0);
                 const totalMicrosBloco = registrosDoBloco.reduce((acc, curr) => acc + (curr.emissoresInfo ? curr.emissoresInfo.micros : 0), 0);
@@ -648,12 +651,12 @@
                 const tabela = document.createElement('table');
                 tabela.className = "w-full text-left border-collapse";
                 
-                // Removida a coluna Status daqui
+                // IMPORTANTE: Removido 'whitespace-nowrap' do 'Detalhes do Emissor' para corrigir visão no celular
                 tabela.innerHTML = `
                     <thead>
                         <tr class="bg-green-50/50 text-green-800 uppercase text-xs border-b border-green-200">
                             <th class="py-3 px-2 font-bold text-center align-middle">Válvula</th>
-                            <th class="py-3 px-2 font-bold text-left align-middle whitespace-nowrap">Detalhes do Emissor</th>
+                            <th class="py-3 px-2 font-bold text-left align-middle min-w-[100px]">Detalhes do Emissor</th>
                             <th class="py-3 px-2 font-bold text-center align-middle">Pulso</th>
                             <th class="py-3 px-2 font-bold text-center align-middle text-green-800">Volume Aplicado</th>
                             <th class="py-3 px-2 font-bold text-center align-middle">Turno</th>
@@ -672,16 +675,18 @@
                         let partes = [];
                         if (em.micros > 0) partes.push(`<span class="font-bold text-gray-800">${em.micros}</span> <span class="text-xs text-gray-600 font-medium">Micros</span>`);
                         if (em.aspersores > 0) partes.push(`<span class="font-bold text-gray-800">${em.aspersores}</span> <span class="text-xs text-gray-600 font-medium">Asp</span>`);
-                        emissoresHTML = `<div class="flex flex-row items-center gap-1.5 text-xs whitespace-nowrap">${partes.join(" <span class='text-[10px] text-gray-400 font-bold'>+</span> ")}</div>`;
+                        
+                        // IMPORTANTE: Alterado para flex-wrap e removido whitespace-nowrap. Assim o texto quebra de linha de forma bonita no celular.
+                        emissoresHTML = `<div class="flex flex-wrap items-center gap-1.5 text-xs">${partes.join(" <span class='text-[10px] text-gray-400 font-bold'>+</span> ")}</div>`;
                     }
 
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-green-50/30 transition-colors text-sm";
                     
-                    // Célula de Status removida de cada linha
+                    // Removido whitespace-nowrap do TD da coluna do Emissor (agora usa break-words)
                     tr.innerHTML = `
                         <td class="py-3 px-2 border-b font-black text-green-800 text-center align-middle">Válvula ${r.valvula}</td>
-                        <td class="py-3 px-2 border-b align-middle text-left leading-tight whitespace-nowrap">${emissoresHTML}</td>
+                        <td class="py-3 px-2 border-b align-middle text-left leading-tight break-words">${emissoresHTML}</td>
                         <td class="py-3 px-2 border-b font-bold text-green-700 text-center align-middle">${r.pulsoTexto}</td>
                         <td class="py-3 px-2 border-b font-extrabold text-blue-700 text-center align-middle whitespace-nowrap">${formataLitros(r.volume)} L</td>
                         <td class="py-3 px-2 border-b text-center align-middle">
@@ -752,7 +757,7 @@
                     recalcularRegistrosExistentes();
                     renderizarTabelasPorBloco();
                     atualizarDashboard();
-                    salvarDadosLocais(); // Salva base de emissores lida
+                    salvarDadosLocais(); 
                 }
             };
             leitor.readAsText(arquivo, 'UTF-8');
@@ -848,8 +853,14 @@
         async function gerarImagemBase64() {
             const relatorioArea = document.getElementById('area-relatorio');
             relatorioArea.classList.add('exporting');
-            // Força largura em px na hora da foto para garantir o layout de grade de 3 colunas (semelhante ao A4 paisagem)
+            
+            // Corrige o comportamento no celular: subindo o scroll pro topo antes de tirar o "print"
+            const originalScroll = window.scrollY;
+            window.scrollTo(0, 0);
+
+            // Força largura em px na hora da foto para garantir o layout de grade
             relatorioArea.style.width = '1350px'; 
+            relatorioArea.style.maxWidth = 'none'; // Libera restrições do tailwind
             
             try {
                 const imgDataUrl = await htmlToImage.toJpeg(relatorioArea, {
@@ -859,8 +870,11 @@
                 });
                 return imgDataUrl;
             } finally {
+                // Devolve os estilos e o scroll ao normal
                 relatorioArea.style.width = '';
+                relatorioArea.style.maxWidth = '';
                 relatorioArea.classList.remove('exporting');
+                window.scrollTo(0, originalScroll);
             }
         }
 
@@ -901,7 +915,7 @@
             const textoMensagem = `*Programação de Irrigação*\n🗓 Data: ${dataFormatada}\n📊 Status: ${statusGeral}`;
 
             try {
-                // 3. Gerar Imagem (agora mostrando todos os dados sem barra de rolagem)
+                // 3. Gerar Imagem (mostrando todos os dados e o rodapé oficial)
                 const imgDataUrl = await gerarImagemBase64();
 
                 // 4. Tentar compartilhar nativamente usando a Web Share API (celulares/tablets)
