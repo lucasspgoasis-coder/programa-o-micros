@@ -6,10 +6,12 @@
     <title>Programação De Irrigação - Fazenda Oásis</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html2canvas e jsPDF para exportação -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Font Awesome (Adicionado crossorigin para evitar SecurityError no html-to-image) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    
+    <!-- html-to-image para exportação superior -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    <!-- jsPDF para PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
@@ -245,7 +247,6 @@
 
     <script>
         // Estrutura de dados para guardar informações dos emissores vindos do CSV
-        // Exemplo de chave: "01_02" (Bloco 01, Válvula 02) -> { micros: 1260, aspersores: 30 }
         let baseEmissores = {};
 
         // Array para armazenar os dados e calcular totais
@@ -258,7 +259,6 @@
                 <path d="M8 13h8v-3H8z" fill="currentColor" fill-opacity="0.2" />
                 <path d="M8 13h8M8 10h8" />
                 <path d="M12 10V5" />
-                <!-- Sprinkles / Gotículas em aspersão -->
                 <path d="M6 3c1.5-1 4.5-2 6-2s4.5 1 6 2" stroke-dasharray="2 2" />
                 <path d="M3 6c2-1.5 6-3 9-3s7 1.5 9 3" stroke-dasharray="2 2" />
             </svg>
@@ -561,7 +561,7 @@
                 const tabela = document.createElement('table');
                 tabela.className = "w-full text-left border-collapse";
                 
-                // Header da Tabela (Foco no Volume Aplicado, Emissores e Status)
+                // Header da Tabela
                 tabela.innerHTML = `
                     <thead>
                         <tr class="bg-green-50/50 text-green-800 uppercase text-xs border-b border-green-200">
@@ -610,15 +610,16 @@
                             ${formataLitros(r.volume)} L
                         </td>
                         
+                        <!-- Uso de inline-flex e itens ao centro com leading-none garante o alinhamento perfeito sem cair o texto -->
                         <td class="py-3 px-2 border-b text-center align-middle">
-                            <div class="mx-auto px-2 py-1 rounded text-[11px] font-bold border border-green-500 bg-green-50 text-green-700 tracking-wide text-center uppercase" style="display: block; width: max-content; line-height: 1.2;">
+                            <span class="inline-flex items-center justify-center px-2 py-1 rounded text-[11px] font-bold border border-green-500 bg-green-50 text-green-700 tracking-wide uppercase leading-none min-h-[24px]">
                                 ${r.turno}
-                            </div>
+                            </span>
                         </td>
                         <td class="py-3 px-2 border-b text-center align-middle">
-                            <div class="mx-auto px-2 py-1 rounded text-[11px] font-bold border ${statusClass} tracking-wide text-center uppercase" style="display: block; width: max-content; line-height: 1.2;">
+                            <span class="inline-flex items-center justify-center px-2 py-1 rounded text-[11px] font-bold border ${statusClass} tracking-wide uppercase leading-none min-h-[24px]">
                                 ${r.status}
-                            </div>
+                            </span>
                         </td>
                         
                         <td class="py-3 px-2 border-b text-center align-middle no-export">
@@ -634,20 +635,20 @@
                 overflowDiv.appendChild(tabela);
                 blocoDiv.appendChild(overflowDiv);
 
-                // Rodapé elegante: Micros e Aspersores separados lado a lado + Totais de Tempo e Volume
+                // Rodapé elegante: Ajustado usando Flex e leading-none para garantir o alinhamento perfeito na exportação
                 const footerBloco = document.createElement('div');
                 footerBloco.className = "bg-gray-50 border-t border-gray-200 px-3 py-3 flex flex-col xl:flex-row justify-between items-center gap-3 rounded-b-xl";
                 footerBloco.innerHTML = `
                     <div class="flex flex-wrap items-center justify-center gap-2 w-full xl:w-auto">
-                        <div class="flex items-center justify-center bg-green-100 text-black border border-green-300 rounded-lg px-3 py-1.5 shadow-sm min-w-[130px]">
-                            <span class="text-[10px] uppercase font-extrabold tracking-wider mr-1.5 text-green-950">Micros:</span>
-                            <span class="bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner">
+                        <div class="flex items-center bg-green-100 text-black border border-green-300 rounded-lg px-2.5 py-1.5 shadow-sm min-w-[120px]">
+                            <span class="text-[10px] uppercase font-extrabold tracking-wider mr-1.5 text-green-950 mt-0.5">Micros:</span>
+                            <span class="flex items-center justify-center bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner leading-none min-w-[30px] min-h-[22px]">
                                 ${totalMicrosBloco.toLocaleString('pt-BR')}
                             </span>
                         </div>
-                        <div class="flex items-center justify-center bg-green-100 text-black border border-green-300 rounded-lg px-3 py-1.5 shadow-sm min-w-[130px]">
-                            <span class="text-[10px] uppercase font-extrabold tracking-wider mr-1.5 text-green-950">Aspersores:</span>
-                            <span class="bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner">
+                        <div class="flex items-center bg-green-100 text-black border border-green-300 rounded-lg px-2.5 py-1.5 shadow-sm min-w-[120px]">
+                            <span class="text-[10px] uppercase font-extrabold tracking-wider mr-1.5 text-green-950 mt-0.5">Aspersores:</span>
+                            <span class="flex items-center justify-center bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner leading-none min-w-[30px] min-h-[22px]">
                                 ${totalAspersoresBloco.toLocaleString('pt-BR')}
                             </span>
                         </div>
@@ -741,7 +742,7 @@
                     const linha = linhas[i].trim();
                     if (!linha) continue;
 
-                    const colunas = lineArray = linha.split(delimitador);
+                    const colunas = linha.split(delimitador);
                     if (colunas.length <= Math.max(idxBloco, idxTipo, idxQuantidade)) continue;
 
                     const blocoOriginal = colunas[idxBloco] ? colunas[idxBloco].trim() : "";
@@ -816,7 +817,7 @@
             });
         }
 
-        // Função para Exportação
+        // Função para Exportação Usando html-to-image
         async function exportar(formato) {
             if(registros.length === 0) {
                 alert("Adicione pelo menos um registro antes de exportar.");
@@ -828,33 +829,38 @@
             // Adiciona classe para esconder elementos irrelevantes na impressão (Ações, botões)
             relatorioArea.classList.add('exporting');
             
-            // Força a largura para uma boa captura de tabela (A4 landscape)
+            // Força a largura para uma boa captura de tabela (A4 landscape) em telas menores
             relatorioArea.style.width = '1122px'; 
             
             try {
-                const canvas = await html2canvas(relatorioArea, {
-                    scale: 2, // Maior qualidade
-                    useCORS: true,
-                    backgroundColor: "#ffffff"
+                // Renderização mais robusta com html-to-image (substituto do html2canvas)
+                const imgDataUrl = await htmlToImage.toJpeg(relatorioArea, {
+                    quality: 1.0,
+                    pixelRatio: 2, // Maior definição da imagem (retina)
+                    backgroundColor: '#ffffff'
                 });
 
                 if (formato === 'jpeg') {
                     const link = document.createElement('a');
                     link.download = `Relatorio_Irrigacao_${document.getElementById('data').value}.jpeg`;
-                    link.href = canvas.toDataURL('image/jpeg', 1.0);
+                    link.href = imgDataUrl;
                     link.click();
                 } 
                 else if (formato === 'pdf') {
-                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
                     const { jsPDF } = window.jspdf;
                     
                     // PDF modo paisagem ('l'), medindo em pontos ('pt'), tamanho A4
                     const pdf = new jsPDF('l', 'pt', 'a4');
                     const pdfWidth = pdf.internal.pageSize.getWidth();
-                    // Calcula altura proporcional
-                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                     
-                    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                    // Usar as proporções reais da imagem gerada pelo html-to-image
+                    const img = new Image();
+                    img.src = imgDataUrl;
+                    await new Promise(r => img.onload = r);
+                    
+                    const pdfHeight = (img.height * pdfWidth) / img.width;
+                    
+                    pdf.addImage(imgDataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight);
                     pdf.save(`Relatorio_Irrigacao_${document.getElementById('data').value}.pdf`);
                 }
             } catch (err) {
