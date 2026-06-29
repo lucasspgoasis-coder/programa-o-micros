@@ -7,23 +7,12 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- html2canvas e jsPDF para exportação -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
-        .turno-verde {
-            border: 2px solid #22c55e !important;
-            color: #15803d !important;
-            background-color: #f0fdf4 !important;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        .turno-verde:focus {
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.3) !important;
-        }
         .input-transicao { transition: all 0.3s ease; }
         
         /* Oculta colunas de ações e botões durante a exportação */
@@ -129,8 +118,8 @@
                     <!-- Turno -->
                     <div class="flex flex-col gap-2">
                         <label for="turno" class="font-semibold text-sm text-green-800 text-center">Turno</label>
-                        <select id="turno" required class="turno-verde rounded-lg p-3 cursor-pointer text-center font-medium">
-                            <option value="" disabled selected>Sel...</option>
+                        <select id="turno" required class="border-2 border-green-500 bg-green-50 text-green-800 rounded-lg p-3 cursor-pointer text-center font-bold focus:ring-2 focus:ring-green-400 w-full appearance-none">
+                            <option value="" disabled selected>Selecione...</option>
                             <option value="Manhã">Manhã</option>
                             <option value="Tarde">Tarde</option>
                             <option value="Noite">Noite</option>
@@ -140,7 +129,7 @@
                     <!-- Status -->
                     <div class="flex flex-col gap-2">
                         <label for="status" class="font-semibold text-sm text-green-800 text-center">Status</label>
-                        <select id="status" required class="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 text-center font-medium">
+                        <select id="status" required class="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 text-center font-medium w-full bg-white text-gray-800 appearance-none">
                             <option value="Programada">Programada</option>
                             <option value="Pendente">Pendente</option>
                             <option value="Concluída">Concluída</option>
@@ -162,7 +151,7 @@
                     </div>
                     <div class="text-right">
                         <span class="text-xs text-gray-500 block uppercase font-semibold">Volume Estimado</span>
-                        <span id="prev-volume-total" class="text-xl font-extrabold text-blue-700">0,00 L</span>
+                        <span id="prev-volume-total" class="text-xl font-extrabold text-blue-700">0 L</span>
                     </div>
                 </div>
 
@@ -238,12 +227,12 @@
                 <!-- Total do Volume Aplicado Geral (Azul Claro Elegante) -->
                 <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm text-center flex flex-col justify-center items-center h-full">
                     <div class="text-blue-900 text-sm font-bold uppercase mb-1">Volume Aplicado Geral</div>
-                    <div id="tot-volume" class="text-2xl font-extrabold text-blue-950">0,00 L</div>
+                    <div id="tot-volume" class="text-2xl font-extrabold text-blue-950">0 L</div>
                 </div>
             </div>
             
-            <!-- Tabelas Separadas por Bloco usando Grid (Lado a Lado - 3 Colunas) -->
-            <div id="tabelas-blocos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+            <!-- Tabelas Separadas por Bloco usando Grid (Lado a Lado - 3 Colunas) com Alturas Alinhadas -->
+            <div id="tabelas-blocos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 <!-- Espaço preenchido via JS ou mensagem de lista vazia -->
                 <div id="lista-vazia-mensagem" class="col-span-1 md:col-span-2 lg:col-span-3 p-12 text-center text-green-600/70 border border-green-100 rounded-lg bg-green-50/20 italic">
                     Nenhuma programação registrada.
@@ -261,6 +250,19 @@
 
         // Array para armazenar os dados e calcular totais
         let registros = [];
+
+        // Ícone SVG elegante representando um microaspersor rotativo em funcionamento
+        const iconeMicroaspersorSVG = `
+            <svg class="w-6 h-6 text-blue-500 inline-block align-middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block;">
+                <path d="M12 22v-9" />
+                <path d="M8 13h8v-3H8z" fill="currentColor" fill-opacity="0.2" />
+                <path d="M8 13h8M8 10h8" />
+                <path d="M12 10V5" />
+                <!-- Sprinkles / Gotículas em aspersão -->
+                <path d="M6 3c1.5-1 4.5-2 6-2s4.5 1 6 2" stroke-dasharray="2 2" />
+                <path d="M3 6c2-1.5 6-3 9-3s7 1.5 9 3" stroke-dasharray="2 2" />
+            </svg>
+        `;
 
         document.addEventListener('DOMContentLoaded', () => {
             const dataInput = document.getElementById('data');
@@ -378,8 +380,9 @@
             return res.join(' ');
         }
 
+        // Formata os Litros removendo completamente as casas decimais (apenas inteiros)
         function formataLitros(valor) {
-            return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return Math.round(valor).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         }
 
         // Função que prevê a vazão e o volume estimado enquanto o usuário digita/seleciona
@@ -415,7 +418,7 @@
                 }
             } else {
                 prevDetalhes.innerHTML = `<span class="text-red-500 font-medium">Nenhum emissor cadastrado para Bloco ${bloco} - Válvula ${valvula} no CSV.</span>`;
-                prevVolume.innerText = `0,00 L`;
+                prevVolume.innerText = `0 L`;
             }
         }
 
@@ -464,6 +467,7 @@
             document.getElementById('valvula').value = ''; 
             alternarCampoOutro('valvula', 'valvula-outro');
             document.getElementById('horas').value = '';
+            document.getElementById('turno').value = '';
             document.getElementById('status').value = 'Programada';
             
             // Ocultar painel de preview de cálculos
@@ -523,26 +527,36 @@
                 // Calcular volume acumulado do Bloco
                 const totalVolumeBloco = registrosDoBloco.reduce((acc, curr) => acc + curr.volume, 0);
                 
-                // Obter quantidade de válvulas ativas (linhas distintas que estão cadastradas)
-                const valvulasAtivasCount = registrosDoBloco.length;
+                // Calcular a soma da quantidade de emissores ativos no Bloco (Microaspersores + Aspersores) separadamente
+                const totalMicrosBloco = registrosDoBloco.reduce((acc, curr) => {
+                    const em = curr.emissoresInfo;
+                    return acc + (em ? (em.micros || 0) : 0);
+                }, 0);
+                const totalAspersoresBloco = registrosDoBloco.reduce((acc, curr) => {
+                    const em = curr.emissoresInfo;
+                    return acc + (em ? (em.aspersores || 0) : 0);
+                }, 0);
 
-                // Criar container do Bloco com Contorno Elegante
+                // Calcular o tempo total de pulso no bloco
+                const totalTempoDecimalBloco = registrosDoBloco.reduce((acc, curr) => acc + curr.pulsoDecimal, 0);
+                const totalTempoFormatadoBloco = decimalParaTempoStr(totalTempoDecimalBloco);
+
+                // Criar container do Bloco com Contorno Elegante (utiliza flex-col e h-full para igualar as alturas no grid)
                 const blocoDiv = document.createElement('div');
-                blocoDiv.className = "bg-white rounded-xl border border-gray-300 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden h-fit w-full";
+                blocoDiv.className = "bg-white rounded-xl border border-gray-300 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col justify-between h-full w-full";
 
-                // Título do Bloco (Verde Claro com texto Preto e ícone de Irrigação/Gota)
+                // Título do Bloco com o Ícone Elegante de Microaspersor
                 const headerBloco = document.createElement('div');
-                headerBloco.className = "bg-green-100 text-black border-b border-green-300 px-4 py-3 font-extrabold text-lg flex items-center justify-between";
+                headerBloco.className = "bg-green-100 text-black border-b border-green-300 px-4 py-3 font-extrabold text-lg flex items-center gap-2.5";
                 headerBloco.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-droplet text-blue-500"></i> Bloco ${blocoNome}
-                    </div>
+                    ${iconeMicroaspersorSVG}
+                    <span>Bloco ${blocoNome}</span>
                 `;
                 blocoDiv.appendChild(headerBloco);
 
-                // Tabela
+                // Tabela (Envolve com flex-grow para expandir o corpo e empurrar o rodapé para o fim)
                 const overflowDiv = document.createElement('div');
-                overflowDiv.className = "overflow-x-auto";
+                overflowDiv.className = "overflow-x-auto flex-grow";
                 
                 const tabela = document.createElement('table');
                 tabela.className = "w-full text-left border-collapse";
@@ -597,14 +611,14 @@
                         </td>
                         
                         <td class="py-3 px-2 border-b text-center align-middle">
-                            <span class="inline-block px-2 py-1 rounded text-xs font-bold border border-green-500 bg-green-50 text-green-700 tracking-wide leading-normal">
+                            <div class="mx-auto px-2 py-1 rounded text-[11px] font-bold border border-green-500 bg-green-50 text-green-700 tracking-wide text-center uppercase" style="display: block; width: max-content; line-height: 1.2;">
                                 ${r.turno}
-                            </span>
+                            </div>
                         </td>
                         <td class="py-3 px-2 border-b text-center align-middle">
-                            <span class="inline-block px-2 py-1 rounded text-xs font-bold border ${statusClass} tracking-wide leading-normal">
+                            <div class="mx-auto px-2 py-1 rounded text-[11px] font-bold border ${statusClass} tracking-wide text-center uppercase" style="display: block; width: max-content; line-height: 1.2;">
                                 ${r.status}
-                            </span>
+                            </div>
                         </td>
                         
                         <td class="py-3 px-2 border-b text-center align-middle no-export">
@@ -620,19 +634,38 @@
                 overflowDiv.appendChild(tabela);
                 blocoDiv.appendChild(overflowDiv);
 
-                // Rodapé: Volume total + Válvulas Ativas
+                // Rodapé elegante: Micros e Aspersores separados lado a lado + Totais de Tempo e Volume
                 const footerBloco = document.createElement('div');
-                footerBloco.className = "bg-gray-50 border-t border-gray-200 px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 rounded-b-xl";
+                footerBloco.className = "bg-gray-50 border-t border-gray-200 px-3 py-3 flex flex-col xl:flex-row justify-between items-center gap-3 rounded-b-xl";
                 footerBloco.innerHTML = `
-                    <div class="flex items-center gap-2 text-xs text-gray-500 font-bold uppercase tracking-wider">
-                        <span>Válvulas Ativas:</span>
-                        <span class="bg-gray-200 text-gray-800 px-2 py-0.5 rounded-full text-xs font-black">${valvulasAtivasCount}</span>
+                    <div class="flex flex-wrap items-center justify-center gap-2 w-full xl:w-auto">
+                        <div class="flex items-center justify-center bg-green-100 text-black border border-green-300 rounded-lg px-3 py-1.5 shadow-sm min-w-[130px]">
+                            <span class="text-[10px] uppercase font-extrabold tracking-wider mr-1.5 text-green-950">Micros:</span>
+                            <span class="bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner">
+                                ${totalMicrosBloco.toLocaleString('pt-BR')}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-center bg-green-100 text-black border border-green-300 rounded-lg px-3 py-1.5 shadow-sm min-w-[130px]">
+                            <span class="text-[10px] uppercase font-extrabold tracking-wider mr-1.5 text-green-950">Aspersores:</span>
+                            <span class="bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner">
+                                ${totalAspersoresBloco.toLocaleString('pt-BR')}
+                            </span>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <span class="font-bold text-gray-500 uppercase tracking-wider text-[10px] block leading-none">Volume Total Aplicado</span>
-                        <span class="font-black text-blue-900 text-lg">
-                            ${formataLitros(totalVolumeBloco)} L
-                        </span>
+                    <div class="flex flex-wrap items-center justify-center xl:justify-end gap-4 w-full xl:w-auto mt-2 xl:mt-0">
+                        <div class="text-center xl:text-right">
+                            <span class="font-bold text-gray-500 uppercase tracking-wider text-[10px] block leading-none mb-1">Tempo Total</span>
+                            <span class="font-black text-gray-800 text-lg block leading-none">
+                                ${totalTempoFormatadoBloco || '0h'}
+                            </span>
+                        </div>
+                        <div class="hidden sm:block w-px h-8 bg-gray-300"></div>
+                        <div class="text-center xl:text-right">
+                            <span class="font-bold text-gray-500 uppercase tracking-wider text-[10px] block leading-none mb-1">Volume Total</span>
+                            <span class="font-black text-blue-900 text-xl block leading-none">
+                                ${formataLitros(totalVolumeBloco)} L
+                            </span>
+                        </div>
                     </div>
                 `;
                 blocoDiv.appendChild(footerBloco);
@@ -708,7 +741,7 @@
                     const linha = linhas[i].trim();
                     if (!linha) continue;
 
-                    const colunas = linha.split(delimitador);
+                    const colunas = lineArray = linha.split(delimitador);
                     if (colunas.length <= Math.max(idxBloco, idxTipo, idxQuantidade)) continue;
 
                     const blocoOriginal = colunas[idxBloco] ? colunas[idxBloco].trim() : "";
