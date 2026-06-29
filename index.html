@@ -248,9 +248,9 @@
                     <div class="text-green-700 text-sm font-bold uppercase mb-1">Tempo Total</div>
                     <div id="tot-tempo" class="text-2xl font-extrabold text-green-600">0 h 0 min</div>
                 </div>
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm text-center flex flex-col justify-center items-center h-full">
-                    <div class="text-blue-900 text-sm font-bold uppercase mb-1">Volume Aplicado Geral</div>
-                    <div id="tot-volume" class="text-2xl font-extrabold text-blue-950">0 L</div>
+                <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-200 shadow-sm text-center flex flex-col justify-center items-center h-full">
+                    <div class="text-emerald-900 text-sm font-bold uppercase mb-1">Volume Aplicado Geral</div>
+                    <div id="tot-volume" class="text-2xl font-extrabold text-emerald-950">0 L</div>
                 </div>
             </div>
             
@@ -272,13 +272,17 @@
         const STORAGE_KEY = 'oasisIrrigacaoAppData';
 
         const iconeMicroaspersorSVG = `
-            <svg class="w-6 h-6 text-blue-500 inline-block align-middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block;">
-                <path d="M12 22v-9" />
-                <path d="M8 13h8v-3H8z" fill="currentColor" fill-opacity="0.2" />
-                <path d="M8 13h8M8 10h8" />
-                <path d="M12 10V5" />
-                <path d="M6 3c1.5-1 4.5-2 6-2s4.5 1 6 2" stroke-dasharray="2 2" />
-                <path d="M3 6c2-1.5 6-3 9-3s7 1.5 9 3" stroke-dasharray="2 2" />
+            <svg class="w-6 h-6 text-black inline-block align-middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Gotejamentos simulando irrigação (Gotas arredondadas e intermitentes) -->
+                <path d="M7.5 7C5.5 8.5 4 11 4 13.5" stroke-dasharray="1 5" stroke-width="2.5" />
+                <path d="M16.5 7C18.5 8.5 20 11 20 13.5" stroke-dasharray="1 5" stroke-width="2.5" />
+                
+                <!-- Estrutura do microaspersor elegante e escura -->
+                <path d="M12 22V11" stroke-width="2" />
+                <path d="M10 11h4" stroke-width="2.5" />
+                <path d="M12 11V7" stroke-width="1.5" />
+                <!-- Rotor superior -->
+                <circle cx="12" cy="7" r="1.5" fill="currentColor" stroke="none" />
             </svg>
         `;
 
@@ -649,7 +653,7 @@
                     <thead>
                         <tr class="bg-green-50/50 text-green-800 uppercase text-xs border-b border-green-200">
                             <th class="py-3 px-2 font-bold text-center align-middle">Válvula</th>
-                            <th class="py-3 px-2 font-bold text-left align-middle">Detalhes do Emissor</th>
+                            <th class="py-3 px-2 font-bold text-left align-middle whitespace-nowrap">Detalhes do Emissor</th>
                             <th class="py-3 px-2 font-bold text-center align-middle">Pulso</th>
                             <th class="py-3 px-2 font-bold text-center align-middle text-green-800">Volume Aplicado</th>
                             <th class="py-3 px-2 font-bold text-center align-middle">Turno</th>
@@ -666,9 +670,9 @@
                     const em = r.emissoresInfo;
                     if (em && (em.micros > 0 || em.aspersores > 0)) {
                         let partes = [];
-                        if (em.micros > 0) partes.push(`<span class="font-bold text-blue-800">${em.micros}</span> <span class="text-xs text-gray-500">Micro</span>`);
-                        if (em.aspersores > 0) partes.push(`<span class="font-bold text-blue-800">${em.aspersores}</span> <span class="text-xs text-gray-500">Asp</span>`);
-                        emissoresHTML = `<div class="flex flex-col gap-0.5 text-xs">${partes.join(" <span class='text-[10px] text-gray-300'>+</span> ")}</div>`;
+                        if (em.micros > 0) partes.push(`<span class="font-bold text-gray-800">${em.micros}</span> <span class="text-xs text-gray-600 font-medium">Micros</span>`);
+                        if (em.aspersores > 0) partes.push(`<span class="font-bold text-gray-800">${em.aspersores}</span> <span class="text-xs text-gray-600 font-medium">Asp</span>`);
+                        emissoresHTML = `<div class="flex flex-row items-center gap-1.5 text-xs whitespace-nowrap">${partes.join(" <span class='text-[10px] text-gray-400 font-bold'>+</span> ")}</div>`;
                     }
 
                     const tr = document.createElement('tr');
@@ -677,7 +681,7 @@
                     // Célula de Status removida de cada linha
                     tr.innerHTML = `
                         <td class="py-3 px-2 border-b font-black text-green-800 text-center align-middle">Válvula ${r.valvula}</td>
-                        <td class="py-3 px-2 border-b align-middle text-left leading-tight">${emissoresHTML}</td>
+                        <td class="py-3 px-2 border-b align-middle text-left leading-tight whitespace-nowrap">${emissoresHTML}</td>
                         <td class="py-3 px-2 border-b font-bold text-green-700 text-center align-middle">${r.pulsoTexto}</td>
                         <td class="py-3 px-2 border-b font-extrabold text-blue-700 text-center align-middle whitespace-nowrap">${formataLitros(r.volume)} L</td>
                         <td class="py-3 px-2 border-b text-center align-middle">
@@ -845,7 +849,7 @@
             const relatorioArea = document.getElementById('area-relatorio');
             relatorioArea.classList.add('exporting');
             // Força largura em px na hora da foto para garantir o layout de grade de 3 colunas (semelhante ao A4 paisagem)
-            relatorioArea.style.width = '1200px'; 
+            relatorioArea.style.width = '1350px'; 
             
             try {
                 const imgDataUrl = await htmlToImage.toJpeg(relatorioArea, {
