@@ -651,14 +651,13 @@
                 const tabela = document.createElement('table');
                 tabela.className = "w-full text-left border-collapse";
                 
-                // IMPORTANTE: Removido 'whitespace-nowrap' do 'Detalhes do Emissor' para corrigir visão no celular
                 tabela.innerHTML = `
                     <thead>
                         <tr class="bg-green-50/50 text-green-800 uppercase text-xs border-b border-green-200">
                             <th class="py-3 px-2 font-bold text-center align-middle">Válvula</th>
                             <th class="py-3 px-2 font-bold text-left align-middle min-w-[100px]">Detalhes do Emissor</th>
                             <th class="py-3 px-2 font-bold text-center align-middle">Pulso</th>
-                            <th class="py-3 px-2 font-bold text-center align-middle text-green-800">Volume Aplicado</th>
+                            <th class="py-3 px-2 font-bold text-center align-middle text-green-800">Volume</th>
                             <th class="py-3 px-2 font-bold text-center align-middle">Turno</th>
                             <th class="py-3 px-2 font-bold text-center align-middle no-export w-12">Ações</th>
                         </tr>
@@ -676,14 +675,12 @@
                         if (em.micros > 0) partes.push(`<span class="font-bold text-gray-800">${em.micros}</span> <span class="text-xs text-gray-600 font-medium">Micros</span>`);
                         if (em.aspersores > 0) partes.push(`<span class="font-bold text-gray-800">${em.aspersores}</span> <span class="text-xs text-gray-600 font-medium">Asp</span>`);
                         
-                        // IMPORTANTE: Alterado para flex-wrap e removido whitespace-nowrap. Assim o texto quebra de linha de forma bonita no celular.
                         emissoresHTML = `<div class="flex flex-wrap items-center gap-1.5 text-xs">${partes.join(" <span class='text-[10px] text-gray-400 font-bold'>+</span> ")}</div>`;
                     }
 
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-green-50/30 transition-colors text-sm";
                     
-                    // Removido whitespace-nowrap do TD da coluna do Emissor (agora usa break-words)
                     tr.innerHTML = `
                         <td class="py-3 px-2 border-b font-black text-green-800 text-center align-middle">Válvula ${r.valvula}</td>
                         <td class="py-3 px-2 border-b align-middle text-left leading-tight break-words">${emissoresHTML}</td>
@@ -707,35 +704,41 @@
                 overflowDiv.appendChild(tabela);
                 blocoDiv.appendChild(overflowDiv);
 
+                // Rodapé reestruturado para colocar Micros e Aspersores EM BAIXO, lado a lado na mesma linha
                 const footerBloco = document.createElement('div');
-                footerBloco.className = "bg-gray-50 border-t border-gray-200 px-3 py-3 flex flex-col xl:flex-row justify-between items-center gap-3 rounded-b-xl";
+                footerBloco.className = "bg-gray-50 border-t border-gray-200 px-3 py-3 flex flex-col gap-3 rounded-b-xl";
                 footerBloco.innerHTML = `
-                    <div class="flex flex-wrap items-center justify-center gap-2 w-full xl:w-auto">
-                        <div class="flex items-center bg-green-100 text-black border border-green-300 rounded-lg px-2.5 py-1.5 shadow-sm min-w-[120px]">
-                            <span class="text-[10px] uppercase font-extrabold tracking-wider mr-1.5 text-green-950 mt-0.5">Micros:</span>
-                            <span class="flex items-center justify-center bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner leading-none min-w-[30px] min-h-[22px]">
-                                ${totalMicrosBloco.toLocaleString('pt-BR')}
-                            </span>
-                        </div>
-                        <div class="flex items-center bg-green-100 text-black border border-green-300 rounded-lg px-2.5 py-1.5 shadow-sm min-w-[120px]">
-                            <span class="text-[10px] uppercase font-extrabold tracking-wider mr-1.5 text-green-950 mt-0.5">Aspersores:</span>
-                            <span class="flex items-center justify-center bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner leading-none min-w-[30px] min-h-[22px]">
-                                ${totalAspersoresBloco.toLocaleString('pt-BR')}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap items-center justify-center xl:justify-end gap-4 w-full xl:w-auto mt-2 xl:mt-0">
-                        <div class="text-center xl:text-right">
-                            <span class="font-bold text-gray-500 uppercase tracking-wider text-[10px] block leading-none mb-1">Tempo Total</span>
-                            <span class="font-black text-gray-800 text-lg block leading-none">
+                    <!-- Linha Superior: Tempo Total e Volume Total do Bloco -->
+                    <div class="flex justify-between items-center w-full px-1">
+                        <div>
+                            <span class="font-bold text-gray-400 uppercase tracking-wider text-[10px] block leading-none mb-1">Tempo Total</span>
+                            <span class="font-black text-gray-800 text-base block leading-none">
                                 ${totalTempoFormatadoBloco || '0h'}
                             </span>
                         </div>
-                        <div class="hidden sm:block w-px h-8 bg-gray-300"></div>
-                        <div class="text-center xl:text-right">
-                            <span class="font-bold text-gray-500 uppercase tracking-wider text-[10px] block leading-none mb-1">Volume Total</span>
-                            <span class="font-black text-blue-900 text-xl block leading-none">
+                        <div class="text-right">
+                            <span class="font-bold text-gray-400 uppercase tracking-wider text-[10px] block leading-none mb-1">Volume Total</span>
+                            <span class="font-black text-blue-900 text-lg block leading-none">
                                 ${formataLitros(totalVolumeBloco)} L
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Divisor discreto para separar as seções -->
+                    <div class="border-t border-gray-200/70"></div>
+                    
+                    <!-- Linha Inferior: Totais de Micros e Aspersores dispostos em Grid de 2 colunas na mesma linha -->
+                    <div class="grid grid-cols-2 gap-2 w-full">
+                        <div class="flex items-center justify-between bg-green-100 text-black border border-green-300 rounded-lg px-2 py-1.5 shadow-sm">
+                            <span class="text-[9px] uppercase font-extrabold tracking-wider text-green-950 mt-0.5">Micros:</span>
+                            <span class="flex items-center justify-center bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner leading-none min-w-[32px] min-h-[22px]">
+                                ${totalMicrosBloco.toLocaleString('pt-BR')}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between bg-green-100 text-black border border-green-300 rounded-lg px-2 py-1.5 shadow-sm">
+                            <span class="text-[9px] uppercase font-extrabold tracking-wider text-green-950 mt-0.5">Aspersores:</span>
+                            <span class="flex items-center justify-center bg-white text-green-950 px-2 py-0.5 rounded text-xs font-black border border-green-200 shadow-inner leading-none min-w-[32px] min-h-[22px]">
+                                ${totalAspersoresBloco.toLocaleString('pt-BR')}
                             </span>
                         </div>
                     </div>
